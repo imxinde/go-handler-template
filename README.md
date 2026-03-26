@@ -148,7 +148,7 @@ Uses `class-variance-authority` to manage component style variants with multiple
 
 ## 📚 Documentation
 
-- **EdgeOne Pages Official Docs**: [https://edgeone.ai/document/go-functions](https://edgeone.ai/document/go-functions)
+- **EdgeOne Pages Official Docs**: [https://pages.edgeone.ai/document/go-functions](https://pages.edgeone.ai/document/go-functions)
 - **Next.js Documentation**: [https://nextjs.org/docs](https://nextjs.org/docs)
 - **Tailwind CSS Documentation**: [https://tailwindcss.com/docs](https://tailwindcss.com/docs)
 - **Go Documentation**: [https://go.dev/doc](https://go.dev/doc)

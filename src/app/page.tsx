@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Play, ExternalLink, Zap, ChevronDown, ChevronUp } from "lucide-react"
+import { Play, ExternalLink, Zap, ChevronDown, ChevronUp, FolderTree, Route, Layers } from "lucide-react"
 
 interface ApiEndpoint {
   name: string
@@ -15,7 +15,6 @@ interface ApiEndpoint {
 }
 
 const endpoints: ApiEndpoint[] = [
-  // Static route
   {
     name: "Hello",
     method: "GET",
@@ -24,7 +23,6 @@ const endpoints: ApiEndpoint[] = [
     description: "Static route — file name maps directly to path",
     category: "static",
   },
-  // Index route
   {
     name: "List Posts",
     method: "GET",
@@ -33,7 +31,6 @@ const endpoints: ApiEndpoint[] = [
     description: "index.go serves as the default handler for a directory",
     category: "index",
   },
-  // Single dynamic param
   {
     name: "User by ID",
     method: "GET",
@@ -42,7 +39,6 @@ const endpoints: ApiEndpoint[] = [
     description: "[userId] captures a single dynamic segment",
     category: "dynamic-single",
   },
-  // Multi dynamic params
   {
     name: "User's Post",
     method: "GET",
@@ -51,7 +47,6 @@ const endpoints: ApiEndpoint[] = [
     description: "Nested dynamic params: [userId] and [postId]",
     category: "dynamic-multi",
   },
-  // Catch-all
   {
     name: "File Access",
     method: "GET",
@@ -80,15 +75,10 @@ export default function Home() {
   const handleApiCall = async (endpoint: ApiEndpoint) => {
     const key = endpoint.path
     setLoadingStates(prev => ({ ...prev, [key]: true }))
-    try {
-      const response = await fetch(endpoint.path)
-      const data = await response.json()
-      setResults(prev => ({ ...prev, [key]: { data: JSON.stringify(data, null, 2), status: response.status } }))
-    } catch (error) {
-      setResults(prev => ({ ...prev, [key]: { data: `Error: Failed to call ${endpoint.path}`, status: 0 } }))
-    } finally {
-      setLoadingStates(prev => ({ ...prev, [key]: false }))
-    }
+    const response = await fetch(endpoint.path)
+    const data = await response.json()
+    setResults(prev => ({ ...prev, [key]: { data: JSON.stringify(data, null, 2), status: response.status } }))
+    setLoadingStates(prev => ({ ...prev, [key]: false }))
   }
 
   const grouped = categoryOrder.map(cat => ({
@@ -98,24 +88,31 @@ export default function Home() {
   }))
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Grid Background */}
+      <div className="grid-background" />
+
+      {/* Background Gradient Orbs - Go Cyan */}
+      <div className="gradient-orb gradient-orb-primary w-[600px] h-[600px] -top-[200px] -left-[150px] animate-pulse-glow" />
+      <div className="gradient-orb gradient-orb-secondary w-[400px] h-[400px] top-[40%] -right-[100px] animate-pulse-glow animation-delay-200" />
+
+      {/* Gopher SVG Decoration */}
+      <svg className="absolute top-[20%] right-[8%] w-[100px] h-[100px] opacity-[0.08]" viewBox="0 0 400 400" fill="currentColor">
+        <path d="M200 0c110.5 0 200 89.5 200 200s-89.5 200-200 200S0 310.5 0 200 89.5 0 200 0zm0 50c-82.8 0-150 67.2-150 150s67.2 150 150 150 150-67.2 150-150S282.8 50 200 50z"/>
+        <circle cx="140" cy="160" r="30"/>
+        <circle cx="260" cy="160" r="30"/>
+        <path d="M200 280c-30 0-60-20-60-50h120c0 30-30 50-60 50z"/>
+      </svg>
+
       {/* Header */}
-      <header className="border-b border-gray-800">
+      <header className="header-border relative z-10">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <a href="https://pages.edgeone.ai" target="_blank" rel="noopener noreferrer">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center">
-                  <img src="/eo-logo-blue.svg" alt="EdgeOne Pages" width={32} height={32} />
-                </div>
-                <h1 className="text-lg font-semibold">EdgeOne Pages</h1>
-              </div>
-            </a>
+          <div className="flex items-center justify-end">
             <a
               href="https://github.com/TencentEdgeOne/go-handler-template"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
+              className="icon-glow text-gray-400 hover:text-[#00ADD8] transition-colors p-2"
               aria-label="GitHub"
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -127,30 +124,36 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-16">
-        <div className="max-w-4xl mx-auto space-y-8">
-          {/* Title */}
-          <div className="text-center space-y-4">
-            <h1 className="text-5xl font-bold leading-tight">
-              Go Functions on EdgeOne Pages
+      <main className="container mx-auto px-6 py-16 relative z-10">
+        <div className="max-w-4xl mx-auto space-y-10">
+          {/* Hero Section */}
+          <div className="text-center space-y-6 animate-fade-in-up">
+            {/* Title */}
+            <h1 className="text-5xl md:text-6xl font-bold leading-tight">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#00ADD8] via-[#5DC9E2] to-white">
+                Go
+              </span>
+              <span className="text-white/70"> + EdgeOne Pages</span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Go Functions use file-based routing — each <code className="text-blue-400">.go</code> file in{" "}
-              <code className="text-blue-400">cloud-functions/</code> automatically maps to an HTTP endpoint.
-              Supports static routes, dynamic parameters, nested params, and catch-all patterns.
+
+            {/* Subtitle */}
+            <p className="text-lg text-gray-400 max-w-3xl mx-auto leading-relaxed">
+              File-based routing for Go functions. Each <code className="text-[#00ADD8] bg-[#00ADD8]/10 px-1.5 py-0.5 rounded">.go</code> file 
+              in <code className="text-[#00ADD8] bg-[#00ADD8]/10 px-1.5 py-0.5 rounded">cloud-functions/</code> automatically 
+              maps to an HTTP endpoint.
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up animation-delay-100">
             <a href="https://edgeone.ai/pages/new?from=github&template=go-handler-template" target="_blank" rel="noopener noreferrer">
-              <Button size="lg" className="bg-[#1c66e5] hover:bg-[#1c66e5]/90 text-white px-8 py-3 text-lg cursor-pointer">
+              <Button size="lg" className="btn-primary px-8 py-6 text-lg rounded-lg cursor-pointer">
                 <Zap className="w-5 h-5 mr-2" />
                 One-Click Deployment
               </Button>
             </a>
             <a href="https://pages.edgeone.ai/document/go-functions" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="lg" className="border-gray-600 hover:bg-gray-800 text-white px-8 py-3 text-lg cursor-pointer">
+              <Button variant="outline" size="lg" className="btn-outline px-8 py-6 text-lg rounded-lg cursor-pointer">
                 <ExternalLink className="w-5 h-5 mr-2" />
                 View Documentation
               </Button>
@@ -158,14 +161,15 @@ export default function Home() {
           </div>
 
           {/* File Structure Card */}
-          <Card className="bg-gray-900 border-gray-700 text-left">
+          <Card className="glass-card border-0 animate-fade-in-up animation-delay-200">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-mono text-gray-400">
-                📁 File-Based Routing Structure
+              <CardTitle className="text-sm font-medium flex items-center gap-2 text-gray-400">
+                <FolderTree className="w-4 h-4 text-[#00ADD8]" />
+                File-Based Routing Structure
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="text-sm text-gray-200 font-mono leading-relaxed">
+              <pre className="file-tree text-sm leading-relaxed overflow-x-auto">
 {`cloud-functions/
 ├── hello.go                              → GET /hello
 ├── api/
@@ -183,25 +187,25 @@ export default function Home() {
           </Card>
 
           {/* API Endpoints by Category */}
-          {grouped.map(group => (
-            <div key={group.category} className="space-y-3">
-              <h2 className="text-lg font-semibold text-gray-300 border-b border-gray-800 pb-2">
-                {group.label}
-              </h2>
-              {group.items.map(endpoint => {
-                const key = endpoint.path
-                const result = results[key]
-                const isLoading = loadingStates[key]
-                const isExpanded = expandedCode === key
+          <div className="space-y-6 animate-fade-in-up animation-delay-300">
+            {grouped.map(group => (
+              <div key={group.category} className="space-y-3">
+                <h2 className="category-header">
+                  {group.label}
+                </h2>
+                {group.items.map(endpoint => {
+                  const key = endpoint.path
+                  const result = results[key]
+                  const isLoading = loadingStates[key]
+                  const isExpanded = expandedCode === key
 
-                return (
-                  <Card key={key} className="bg-gray-900 border-gray-700">
-                    <CardContent className="pt-5 pb-4 space-y-3">
+                  return (
+                    <div key={key} className="route-card p-4 space-y-3">
                       {/* Endpoint header */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded">
+                            <span className="method-badge">
                               {endpoint.method}
                             </span>
                             <span className="font-mono text-sm text-gray-200">{endpoint.path}</span>
@@ -211,7 +215,7 @@ export default function Home() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setExpandedCode(isExpanded ? null : key)}
-                            className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1 cursor-pointer"
+                            className="text-xs text-gray-500 hover:text-[#00ADD8] flex items-center gap-1 cursor-pointer transition-colors"
                           >
                             <span className="font-mono">{endpoint.file.split("/").pop()}</span>
                             {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -220,7 +224,7 @@ export default function Home() {
                             size="sm"
                             onClick={() => handleApiCall(endpoint)}
                             disabled={isLoading}
-                            className="bg-[#1c66e5] hover:bg-[#1c66e5]/90 text-white cursor-pointer"
+                            className="btn-primary rounded cursor-pointer"
                           >
                             {isLoading ? (
                               <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
@@ -234,38 +238,85 @@ export default function Home() {
 
                       {/* Expandable source file path */}
                       {isExpanded && (
-                        <div className="bg-gray-800 rounded px-3 py-2">
-                          <p className="text-xs text-gray-400 font-mono">
-                            📄 {endpoint.file}
+                        <div className="bg-[#0d1117] rounded px-3 py-2 border border-[#00ADD8]/10">
+                          <p className="text-xs text-gray-400 font-mono flex items-center gap-2">
+                            <svg className="w-4 h-4 text-[#00ADD8]" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M1.811 10.715l7.931 2.855-.001-5.727-7.93 2.872zm14.912-6.118H8.595v14.523l8.128-2.975V4.597z"/>
+                            </svg>
+                            {endpoint.file}
                           </p>
                         </div>
                       )}
 
                       {/* Result */}
                       {result && (
-                        <div className="text-left">
-                          <p className="text-xs text-gray-500 mb-1">
-                            Response{result.status > 0 ? ` (${result.status})` : ""}:
-                          </p>
-                          <pre className="text-green-400 font-mono text-xs bg-gray-800 px-3 py-2 rounded overflow-x-auto">
+                        <div className="api-response">
+                          <div className="px-3 py-2 border-b border-green-500/20">
+                            <p className="text-xs text-gray-500 font-mono">
+                              Response {result.status > 0 ? `(${result.status})` : ""}
+                            </p>
+                          </div>
+                          <pre className="p-3 text-xs overflow-x-auto">
                             {result.data}
                           </pre>
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
-                )
-              })}
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-12">
+            <div className="feature-card p-5 animate-fade-in-up animation-delay-100">
+              <div className="w-10 h-10 mb-4 rounded-lg bg-[#00ADD8]/15 flex items-center justify-center">
+                <FolderTree className="w-5 h-5 text-[#00ADD8]" />
+              </div>
+              <h3 className="font-semibold mb-2">File-Based Routing</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Intuitive routing based on file system structure
+              </p>
             </div>
-          ))}
+
+            <div className="feature-card p-5 animate-fade-in-up animation-delay-200">
+              <div className="w-10 h-10 mb-4 rounded-lg bg-[#00ADD8]/15 flex items-center justify-center">
+                <Route className="w-5 h-5 text-[#00ADD8]" />
+              </div>
+              <h3 className="font-semibold mb-2">Dynamic Routes</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Support for params, nested params, and catch-all
+              </p>
+            </div>
+
+            <div className="feature-card p-5 animate-fade-in-up animation-delay-300">
+              <div className="w-10 h-10 mb-4 rounded-lg bg-[#00ADD8]/15 flex items-center justify-center">
+                <Layers className="w-5 h-5 text-[#00ADD8]" />
+              </div>
+              <h3 className="font-semibold mb-2">Go Performance</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Native Go compilation for maximum efficiency
+              </p>
+            </div>
+          </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800 mt-16">
+      <footer className="footer-border relative z-10 mt-16">
         <div className="container mx-auto px-6 py-8">
-          <div className="text-center text-gray-400">
-            <p>Powered by EdgeOne Pages</p>
+          <div className="flex items-center justify-center gap-2 text-gray-500">
+            <span>Powered by</span>
+            <a 
+              href="https://pages.edgeone.ai" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-[#00ADD8] transition-colors flex items-center gap-1"
+            >
+              <img src="/eo-logo-blue.svg" alt="EdgeOne" width={16} height={16} />
+              EdgeOne Pages
+            </a>
           </div>
         </div>
       </footer>
