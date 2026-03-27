@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Play, ExternalLink, Zap, ChevronDown, ChevronUp, FolderTree, Route, Layers, Timer, Square } from "lucide-react"
@@ -67,78 +67,68 @@ const categoryLabels: Record<string, string> = {
 
 const categoryOrder = ["static", "index", "dynamic-single", "dynamic-multi", "catch-all"]
 
-// SSE Timeout Test Component
+// Timeout Test Component
 function TimeoutTest() {
   const [duration, setDuration] = useState("15")
   const [running, setRunning] = useState(false)
-  const [logs, setLogs] = useState<Array<{ event: string; time: string; [k: string]: unknown }>>([])
-  const [sseError, setSseError] = useState<string | null>(null)
+  const [elapsed, setElapsed] = useState(0)
+  const [result, setResult] = useState<{ status: string; data?: Record<string, unknown>; error?: string } | null>(null)
   const abortRef = useRef<AbortController | null>(null)
-  const logEndRef = useRef<HTMLDivElement | null>(null)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [])
 
   const startTest = useCallback(() => {
     const sec = parseInt(duration, 10)
     if (!sec || sec < 1 || sec > 120) return
 
     setRunning(true)
-    setLogs([])
-    setSseError(null)
+    setElapsed(0)
+    setResult(null)
 
     const controller = new AbortController()
     abortRef.current = controller
 
+    const start = Date.now()
+    timerRef.current = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - start) / 1000))
+    }, 200)
+
     fetch(`/test-timeout?duration=${sec}`, { signal: controller.signal })
       .then(async (res) => {
-        const reader = res.body!.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ""
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-
-          const parts = buffer.split("\n\n")
-          buffer = parts.pop() || ""
-
-          for (const part of parts) {
-            const eventMatch = part.match(/^event:\s*(.+)$/m)
-            const dataMatch = part.match(/^data:\s*(.+)$/m)
-            if (!eventMatch || !dataMatch) continue
-            const event = eventMatch[1]
-            const data = JSON.parse(dataMatch[1])
-            setLogs((prev) => [...prev, { event, ...data, time: new Date().toLocaleTimeString() }])
-          }
-        }
+        const data = await res.json()
+        setResult({ status: res.ok ? "success" : "error", data })
       })
       .catch((err: Error) => {
         if (err.name !== "AbortError") {
-          setSseError(err.message)
-          setLogs((prev) => [...prev, { event: "error", message: err.message, time: new Date().toLocaleTimeString() }])
+          setResult({ status: "error", error: err.message })
         }
       })
-      .finally(() => setRunning(false))
+      .finally(() => {
+        if (timerRef.current) clearInterval(timerRef.current)
+        setElapsed(Math.floor((Date.now() - start) / 1000))
+        setRunning(false)
+      })
   }, [duration])
 
   const stopTest = useCallback(() => {
     abortRef.current?.abort()
+    if (timerRef.current) clearInterval(timerRef.current)
     setRunning(false)
+    setResult({ status: "aborted", error: "Test stopped by user" })
   }, [])
 
-  const eventStyles: Record<string, string> = {
-    start: "text-[#00ADD8] bg-[#00ADD8]/10",
-    tick: "text-gray-300 bg-white/5",
-    done: "text-green-400 bg-green-500/10",
-    error: "text-red-400 bg-red-500/10",
-  }
+  const progressPct = running ? Math.min((elapsed / parseInt(duration || "1", 10)) * 100, 100) : 0
 
   return (
     <Card className="glass-card border-0">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium flex items-center gap-2 text-gray-400">
           <Timer className="w-4 h-4 text-[#00ADD8]" />
-          Timeout Test (SSE)
-          <span className="text-gray-600 font-normal">— test maxDuration limit with real-time streaming</span>
+          Timeout Test
+          <span className="text-gray-600 font-normal">— test Go cloud function maxDuration limit</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -194,46 +184,63 @@ function TimeoutTest() {
           ))}
         </div>
 
-        {sseError && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-sm text-red-400">
-            ⚠ {sseError}
+        {/* Progress */}
+        {(running || result) && (
+          <div className="bg-[#0d1117] rounded-lg overflow-hidden border border-white/5">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+              <span className="text-xs text-gray-600 font-mono">
+                {running ? `Waiting for response...` : "Result"}
+              </span>
+              {running && (
+                <span className="flex items-center gap-1.5 text-xs text-[#00ADD8]">
+                  <span className="w-1.5 h-1.5 bg-[#00ADD8] rounded-full animate-pulse" />
+                  {elapsed}s / {duration}s
+                </span>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            {running && (
+              <div className="h-1 bg-white/5">
+                <div
+                  className="h-full bg-[#00ADD8] transition-all duration-200"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            )}
+
+            <div className="p-4 font-mono text-sm">
+              {running && (
+                <div className="text-gray-400 flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-[#00ADD8] border-t-transparent rounded-full animate-spin" />
+                  Go function sleeping for {duration}s… ({elapsed}s elapsed)
+                </div>
+              )}
+              {result?.status === "success" && (
+                <div className="space-y-2">
+                  <div className="text-green-400">✅ Function returned successfully</div>
+                  <pre className="text-xs text-gray-300 bg-white/5 rounded p-3 overflow-auto">
+                    {JSON.stringify(result.data, null, 2)}
+                  </pre>
+                </div>
+              )}
+              {result?.status === "error" && (
+                <div className="space-y-2">
+                  <div className="text-red-400">❌ Request failed after {elapsed}s</div>
+                  {result.error && <p className="text-red-400/70 text-xs">{result.error}</p>}
+                  {result.data && (
+                    <pre className="text-xs text-gray-300 bg-white/5 rounded p-3 overflow-auto">
+                      {JSON.stringify(result.data, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              )}
+              {result?.status === "aborted" && (
+                <div className="text-yellow-400">⚠ {result.error}</div>
+              )}
+            </div>
           </div>
         )}
-
-        {/* Event log */}
-        <div className="bg-[#0d1117] rounded-lg overflow-hidden border border-white/5">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
-            <span className="text-xs text-gray-600 font-mono">Event Stream</span>
-            {running && (
-              <span className="flex items-center gap-1.5 text-xs text-[#00ADD8]">
-                <span className="w-1.5 h-1.5 bg-[#00ADD8] rounded-full animate-pulse" />
-                LIVE
-              </span>
-            )}
-            {logs.length > 0 && !running && (
-              <span className="text-xs text-gray-600">{logs.length} events</span>
-            )}
-          </div>
-          <div className="p-3 max-h-72 overflow-auto font-mono text-xs space-y-0.5">
-            {logs.length === 0 ? (
-              <p className="text-gray-600 py-4 text-center">Waiting to start…</p>
-            ) : (
-              logs.map((log, i) => (
-                <div key={i} className={`flex gap-2 px-2 py-1 rounded ${eventStyles[log.event] || "text-gray-500 bg-white/5"}`}>
-                  <span className="text-gray-600 shrink-0">{log.time}</span>
-                  <span className="font-semibold shrink-0 w-14">[{log.event}]</span>
-                  <span className="truncate">
-                    {log.event === "tick" && `${log.second as number}s elapsed=${log.elapsed as string} remaining=${log.remaining as number}s`}
-                    {log.event === "start" && `duration=${log.duration as number}s started=${log.startTime as string}`}
-                    {log.event === "done" && `✅ completed in ${log.totalElapsed as string}`}
-                    {log.event === "error" && `❌ ${log.message as string}`}
-                  </span>
-                </div>
-              ))
-            )}
-            <div ref={logEndRef} />
-          </div>
-        </div>
       </CardContent>
     </Card>
   )
